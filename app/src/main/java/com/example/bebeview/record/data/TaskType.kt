@@ -66,9 +66,6 @@ enum class TaskType(
         durationSec = 60,
     );
 
-    /** 지금 네이티브로 실제 분석이 구현된 과제인지 (나머지는 다음 단계에서 포팅 예정) */
-    val isImplemented: Boolean get() = this == NAME_RESPONSE
-
     /** 신호음(이름 부르기·동작 시범 시점)이 필요한 과제 */
     val needsStimulus: Boolean get() = this != BALL_PLAY
 

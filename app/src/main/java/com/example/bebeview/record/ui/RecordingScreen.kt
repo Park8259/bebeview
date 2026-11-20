@@ -69,7 +69,10 @@ import com.example.bebeview.record.data.FaceTrace
 import com.example.bebeview.record.data.ParentSessionStore
 import com.example.bebeview.record.data.TaskType
 import com.example.bebeview.record.data.correctedAgeMonths
+import com.example.bebeview.record.engine.BallPlayAnalyzer
 import com.example.bebeview.record.engine.FaceAnalyzer
+import com.example.bebeview.record.engine.ImitationAnalyzer
+import com.example.bebeview.record.engine.PoseAnalyzer
 import com.example.bebeview.record.engine.NameResponseAnalyzer
 import com.example.bebeview.record.ui.recording.AnalyzingView
 import com.example.bebeview.record.ui.recording.CheckRow
@@ -155,11 +158,14 @@ fun RecordingScreen(taskType: TaskType) {
     suspend fun analyze(video: File, stimulus: Long?, info: String) {
         try {
             val (result, trace) = withContext(Dispatchers.Default) {
-                if (!task.isImplemented) {
-                    AnalysisResult("retry_needed", retryReason = "${task.label} 분석은 아직 앱에서 준비 중이에요") to null
-                } else {
-                    val track = FaceAnalyzer.extractFaceTrack(context, video)
-                    NameResponseAnalyzer.analyzeWithTrace(track, stimulus ?: (BEEP_AT[0] * 1000L))
+                val stimulusMs = stimulus ?: (BEEP_AT[0] * 1000L)
+                when (task) {
+                    TaskType.NAME_RESPONSE ->
+                        NameResponseAnalyzer.analyzeWithTrace(FaceAnalyzer.extractFaceTrack(context, video), stimulusMs)
+                    TaskType.IMITATION ->
+                        ImitationAnalyzer.analyze(PoseAnalyzer.extract(context, video), stimulusMs) to null
+                    TaskType.BALL_PLAY ->
+                        BallPlayAnalyzer.analyze(PoseAnalyzer.extract(context, video, withBall = true)) to null
                 }
             }
             finish(video, result, trace)
@@ -254,7 +260,8 @@ fun RecordingScreen(taskType: TaskType) {
             videoCapture = capture
             if (phase == Phase.INIT) phase = Phase.PREP
         } catch (e: Exception) {
-            errorMsg = "카메라를 쓸 수 없어요. 설정에서 카메라를 허용해 주세요."
+            // 권한은 있는데 카메라 연결에 실패한 경우 (다른 앱이 사용 중, 기기 오류 등)
+            errorMsg = "카메라를 켜지 못했어요. 다른 앱이 카메라를 쓰고 있다면 닫고 다시 시도해 주세요."
             phase = Phase.ERROR
         }
     }

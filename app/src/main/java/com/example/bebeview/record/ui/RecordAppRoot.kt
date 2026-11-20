@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.bebeview.record.api.AuthTokenHolder
 import com.example.bebeview.record.data.AppData
 import com.example.bebeview.record.data.ParentSession
 import com.example.bebeview.record.data.ParentSessionStore
@@ -51,6 +52,8 @@ fun RecordAppRoot() {
     remember { AppData.init(context) }
 
     var session by remember { mutableStateOf(ParentSessionStore.load(context)) }
+    // 재시작 후에도 요청마다 토큰이 자동으로 실리도록 메모리에 올려둠
+    LaunchedEffect(session) { AuthTokenHolder.token = session?.token }
     // 회원가입으로 계정은 만들었지만 약관 동의 전인 세션 (가입 완료 때 저장)
     var pendingSession by remember { mutableStateOf<ParentSession?>(null) }
 
@@ -79,7 +82,11 @@ fun RecordAppRoot() {
             }
             override fun back() { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
             override fun finishAuth() {
-                pendingSession?.let { ParentSessionStore.save(context, it); session = it }
+                pendingSession?.let {
+                    ParentSessionStore.save(context, it)
+                    AuthTokenHolder.token = it.token
+                    session = it
+                }
                 pendingSession = null
                 reset(Route.Tasks)
             }
@@ -140,5 +147,6 @@ fun RecordAppRoot() {
 fun resetToStart(context: android.content.Context, nav: AppNav) {
     AppData.clearProfile()
     ParentSessionStore.clear(context)
+    AuthTokenHolder.token = null
     nav.reset(Route.Start)
 }

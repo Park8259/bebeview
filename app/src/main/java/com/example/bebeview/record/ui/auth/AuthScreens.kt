@@ -46,8 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bebeview.R
 import com.example.bebeview.record.api.ApiClient
+import com.example.bebeview.record.api.AuthTokenHolder
 import com.example.bebeview.record.api.LoginRequest
 import com.example.bebeview.record.api.RegisterRequest
+import com.example.bebeview.record.api.SendCodeRequest
+import com.example.bebeview.record.api.VerifyCodeRequest
 import com.example.bebeview.record.api.errorMessageOf
 import com.example.bebeview.record.data.ParentSession
 import com.example.bebeview.ui.components.BigButton
@@ -129,6 +132,8 @@ fun SignupScreen(onDone: (ParentSession) -> Unit, onBack: () -> Unit) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var loading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf("") }
+    // 파일럿 서버는 메일 대신 응답으로 인증번호를 돌려줘요. 있을 때만 화면에 보여줘요
+    var devCode by remember { mutableStateOf<String?>(null) }
 
     // 인증번호 남은 시간
     LaunchedEffect(sentAt, verified) {
@@ -146,15 +151,29 @@ fun SignupScreen(onDone: (ParentSession) -> Unit, onBack: () -> Unit) {
     val canNext = name.isNotBlank() && verified && passwordOk && match
 
     fun sendCode() {
-        // 서버 연결: 이 이메일로 인증번호 보내기 (아직 서버 API 없음)
-        sentAt = System.currentTimeMillis()
-        now = sentAt!!
-        code = ""
+        errorMsg = ""
+        scope.launch {
+            try {
+                devCode = ApiClient.api.sendEmailCode(SendCodeRequest(email.trim())).devCode
+                sentAt = System.currentTimeMillis()
+                now = sentAt!!
+                code = ""
+            } catch (e: Exception) {
+                errorMsg = errorMessageOf(e)
+            }
+        }
     }
 
     fun checkCode() {
-        // 서버 연결: 인증번호 확인. 지금은 웹과 같이 6자리 숫자면 통과
-        if (Regex("^\\d{6}$").matches(code) && left > 0) verified = true
+        errorMsg = ""
+        scope.launch {
+            try {
+                ApiClient.api.verifyEmailCode(VerifyCodeRequest(email.trim(), code))
+                verified = true
+            } catch (e: Exception) {
+                errorMsg = errorMessageOf(e)
+            }
+        }
     }
 
     fun next() {
@@ -163,7 +182,8 @@ fun SignupScreen(onDone: (ParentSession) -> Unit, onBack: () -> Unit) {
         scope.launch {
             try {
                 val res = ApiClient.api.register(RegisterRequest(name.trim(), email.trim(), password))
-                onDone(ParentSession(res.parentId, res.name, res.email))
+                AuthTokenHolder.token = res.token
+                onDone(ParentSession(res.parentId, res.name, res.email, res.token))
             } catch (e: Exception) {
                 errorMsg = errorMessageOf(e)
             } finally {
@@ -243,6 +263,7 @@ fun SignupScreen(onDone: (ParentSession) -> Unit, onBack: () -> Unit) {
                 val (help, helpColor, helpBold) = when {
                     verified -> Triple("✓ 이메일 인증이 완료됐어요", Bebe.Link, true)
                     sentAt != null && left == 0 -> Triple("인증 시간이 지났어요. 재전송을 눌러주세요", Bebe.Error, false)
+                    sentAt != null && devCode != null -> Triple("테스트용 인증번호: $devCode (메일 발송 전 파일럿 단계)", Bebe.Help, false)
                     else -> Triple("입력한 이메일로 인증번호를 보내드려요", Bebe.Help, false)
                 }
                 Text(help, style = bebeText(12.5.sp, helpColor, bold = helpBold))
@@ -425,7 +446,8 @@ fun LoginScreen(onDone: (ParentSession) -> Unit, onBack: () -> Unit, onSignup: (
         scope.launch {
             try {
                 val res = ApiClient.api.login(LoginRequest(email.trim(), password))
-                onDone(ParentSession(res.parentId, res.name, res.email))
+                AuthTokenHolder.token = res.token
+                onDone(ParentSession(res.parentId, res.name, res.email, res.token))
             } catch (e: Exception) {
                 errorMsg = errorMessageOf(e)
             } finally {
