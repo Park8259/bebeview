@@ -1,5 +1,6 @@
 package com.example.bebeview.record.data
 
+import kotlin.math.roundToLong
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -167,5 +168,23 @@ val PEER_REFERENCE: Map<TaskType, String> = mapOf(
     TaskType.NAME_RESPONSE to "참고 평균 3.62초 (전근아·김휘영 2025, 18~48개월)",
 )
 
-fun peerNorm(task: TaskType, ageMonths: Int): Double? =
-    if (task == TaskType.NAME_RESPONSE && ageMonths >= 18) 3.62 else null
+/**
+ * 또래 지표 (변화 그래프의 노란 선). 월령(개월) → 값, 사이 월령은 선형 보간.
+ * - 호명 반응 18개월 이상: 전근아·김휘영(2025) TD군 평균 3.62초
+ * - 그 밖의 값(호명 반응 18개월 미만, 동작 모방, 공 주고받기)은 논문 값이 없어 넣은 **데모용 임시값**이에요.
+ *   실제 참조 데이터가 생기면 이 표만 바꾸면 돼요.
+ */
+private val PEER_TABLE: Map<TaskType, List<Pair<Int, Double>>> = mapOf(
+    TaskType.NAME_RESPONSE to listOf(6 to 5.5, 12 to 4.6, 18 to 3.62, 48 to 3.62), // 초 (짧을수록 빠름)
+    TaskType.IMITATION to listOf(6 to 7.0, 9 to 6.0, 12 to 5.0, 18 to 4.0, 24 to 3.2, 36 to 2.6, 48 to 2.4), // 초
+    TaskType.BALL_PLAY to listOf(6 to 0.0, 9 to 1.0, 12 to 2.0, 18 to 3.0, 24 to 4.0, 36 to 6.0, 48 to 7.0), // 회
+)
+
+fun peerNorm(task: TaskType, ageMonths: Int): Double? {
+    val table = PEER_TABLE[task] ?: return null
+    if (ageMonths <= table.first().first) return table.first().second
+    if (ageMonths >= table.last().first) return table.last().second
+    val (a, b) = table.zipWithNext().first { (lo, hi) -> ageMonths in lo.first..hi.first }
+    val t = (ageMonths - a.first).toDouble() / (b.first - a.first)
+    return ((a.second + (b.second - a.second) * t) * 100).roundToLong() / 100.0
+}

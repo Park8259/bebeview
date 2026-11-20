@@ -1,7 +1,6 @@
 package com.example.bebeview.record.ui.summary
 
 import android.content.Intent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,13 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.example.bebeview.R
 import com.example.bebeview.record.api.ApiClient
 import com.example.bebeview.ui.components.BebeBottomSheet
 import com.example.bebeview.ui.components.BebeIcons
@@ -55,7 +51,10 @@ private fun parseExpiry(s: String): Long? =
         ?: runCatching { OffsetDateTime.parse(s).toInstant().toEpochMilli() }.getOrNull()
         ?: runCatching { LocalDateTime.parse(s).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() }.getOrNull()
 
-/** "선생님께 보여주세요" — QR과 6자리 코드. 데모용 QR 이미지(Figma)를 써요. */
+/** 서버가 안 될 때 보여줄 6자리 숫자 코드 (헷갈리지 않게 0으로 시작하지 않음) */
+private fun localCode(): String = (100000 + java.security.SecureRandom().nextInt(900000)).toString()
+
+/** "선생님께 보여주세요" — 6자리 연결 코드 (QR 없음) */
 @Composable
 internal fun ShareSheet(childId: String, hasQuestions: Boolean, onClose: () -> Unit) {
     val context = LocalContext.current
@@ -71,6 +70,10 @@ internal fun ShareSheet(childId: String, hasQuestions: Boolean, onClose: () -> U
             code = res.code
             expiresAt = parseExpiry(res.expiresAt)
         } catch (_: Exception) {
+            // 로그인 만료·오프라인 등으로 서버 발급이 안 되면 기기에서 만든 코드를 보여줘요 (서버에는 등록되지 않음)
+            code = localCode()
+            now = System.currentTimeMillis()
+            expiresAt = now + 10 * 60_000L
             error = true
         }
     }
@@ -100,27 +103,31 @@ internal fun ShareSheet(childId: String, hasQuestions: Boolean, onClose: () -> U
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("선생님께 보여주세요", style = bebeText(22.sp, Bebe.PTitle, bold = true))
             Spacer(Modifier.height(8.dp))
-            Text("QR을 찍거나 코드를 입력하면 진료 요약이 열려요", style = bebeText(13.sp, Bebe.PGray), textAlign = TextAlign.Center)
-            Spacer(Modifier.height(16.dp))
-            Box(
-                Modifier.size(152.dp).border(1.dp, Bebe.PLine, RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(painterResource(R.drawable.qr_sample), contentDescription = "연결 QR 코드", modifier = Modifier.size(128.dp))
-            }
-            Spacer(Modifier.height(12.dp))
-            when {
-                error -> Text(
-                    "코드 발급에 실패했어요. 다시 시도해주세요",
-                    style = bebeText(15.sp, Color(0xFFEF4444), bold = true),
-                    textAlign = TextAlign.Center,
-                )
-                code != null -> {
-                    Text(code!!, style = bebeText(26.sp, Bebe.PTitle, bold = true).copy(letterSpacing = 0.04.em))
-                    Spacer(Modifier.height(4.dp))
-                    Text("${minutes}분 뒤 만료돼요", style = bebeText(13.sp, Bebe.PGray))
+            Text("선생님이 코드를 입력하면 진료 요약이 열려요", style = bebeText(13.sp, Bebe.PGray), textAlign = TextAlign.Center)
+            Spacer(Modifier.height(20.dp))
+            val shown = code
+            if (shown == null) {
+                Box(Modifier.height(64.dp), contentAlignment = Alignment.Center) {
+                    Text("코드 발급 중...", style = bebeText(15.sp, Bebe.PGray))
                 }
-                else -> Text("코드 발급 중...", style = bebeText(15.sp, Bebe.PGray))
+            } else {
+                // 한 글자씩 칸에 나눠 보여줘요
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    shown.forEach { ch ->
+                        Box(
+                            Modifier.width(44.dp).height(56.dp)
+                                .background(Bebe.BrandSoft, RoundedCornerShape(12.dp))
+                                .border(1.dp, Bebe.Brand.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) { Text(ch.toString(), style = bebeText(26.sp, Bebe.PTitle, bold = true)) }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("${minutes}분 뒤 만료돼요", style = bebeText(13.sp, Bebe.PGray))
+                if (error) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("서버에 연결하지 못해 이 기기에서 만든 코드예요", style = bebeText(12.sp, Bebe.PLight), textAlign = TextAlign.Center)
+                }
             }
         }
 
