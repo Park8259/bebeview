@@ -2,9 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 웹 글꼴(CDN) 로드 -->
+    <!-- 베베뷰 서버(지표 업로드·공유 코드) 통신 -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- 과제 촬영 (getUserMedia) -->
+    <!-- 과제 촬영(CameraX) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
@@ -20,6 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:largeHeap="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.Bebeview">
         <!-- 웹 화면이 세로 모바일 레이아웃이라 세로 고정.
              configChanges: 다크모드/키보드 등 변경 시 액티비티를 재생성하지 않아 WebView 상태(녹화·분석 중)를 유지 -->

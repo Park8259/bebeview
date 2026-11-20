@@ -1,80 +1,8 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
 
-// ── 웹 앱(GrowthLens) 묶기 ───────────────────────────────────────────────
-// local.properties 설정
-//   growthlens.dir=/path/to/growthLens   웹 프로젝트 폴더 (필수)
-//   growthlens.npm=/path/to/npm          npm 위치 (없으면 흔한 위치에서 찾음)
-//   growthlens.skipNpmBuild=true         npm 빌드 생략, 이미 있는 dist/ 만 복사
-val localProps = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
-}
-val webDir: File = file(
-    localProps.getProperty("growthlens.dir")
-        ?: error("local.properties 에 growthlens.dir=<웹 프로젝트 경로> 를 설정하세요")
-)
-val skipNpmBuild = localProps.getProperty("growthlens.skipNpmBuild")?.toBoolean() ?: false
-val npmPath: String = localProps.getProperty("growthlens.npm")
-    ?: listOf("/opt/homebrew/bin/npm", "/usr/local/bin/npm", "/usr/bin/npm")
-        .firstOrNull { File(it).canExecute() }
-    ?: "npm"
-
-// Android Studio에서 실행하면 PATH에 node가 없을 수 있어서 npm 폴더를 앞에 붙임
-val buildWeb = tasks.register<Exec>("buildWeb") {
-    group = "growthlens"
-    description = "웹 앱을 npm run build 로 빌드합니다 (dist/)"
-    workingDir = webDir
-    commandLine(npmPath, "run", "build")
-    File(npmPath).parentFile?.let { environment("PATH", "${it.absolutePath}:${System.getenv("PATH")}") }
-    inputs.dir(webDir.resolve("src"))
-    inputs.dir(webDir.resolve("public"))
-    inputs.files(
-        listOf("index.html", "package.json", "package-lock.json", "vite.config.ts",
-            "tailwind.config.js", "postcss.config.js", "tsconfig.app.json")
-            .map(webDir::resolve).filter(File::exists)
-    )
-    outputs.dir(webDir.resolve("dist"))
-    enabled = !skipNpmBuild
-}
-
-abstract class CopyWebAssetsTask : DefaultTask() {
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val distDir: DirectoryProperty
-
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
-
-    @get:Inject
-    abstract val fs: FileSystemOperations
-
-    @TaskAction
-    fun copy() {
-        fs.sync {
-            from(distDir) { into("www") }
-            into(outputDir)
-        }
-    }
-}
-
-val copyWebAssets = tasks.register<CopyWebAssetsTask>("copyWebAssets") {
-    group = "growthlens"
-    description = "웹 빌드 결과(dist/)를 앱 assets/www 로 복사합니다"
-    dependsOn(buildWeb)
-    distDir.set(webDir.resolve("dist"))
-}
-
-androidComponents {
-    onVariants { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(copyWebAssets, CopyWebAssetsTask::outputDir)
-    }
-}
-// ────────────────────────────────────────────────────────────────────────
 
 android {
     namespace = "com.example.bebeview"
@@ -115,6 +43,21 @@ android {
 }
 
 dependencies {
+    // 촬영
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-video:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+    // 얼굴 랜드마크 분석 (호명반응 과제: 고개 돌림 감지)
+    implementation("com.google.mediapipe:tasks-vision:0.10.21")
+    // 서버 연동
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // 코루틴
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -123,7 +66,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.webkit)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
