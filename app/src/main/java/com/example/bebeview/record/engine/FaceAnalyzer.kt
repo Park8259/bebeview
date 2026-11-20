@@ -79,7 +79,9 @@ object FaceAnalyzer {
             var i = 0
             while (i * stepUs < durationMs * 1000L) {
                 val tUs = i * stepUs
-                val bitmap: Bitmap? = retriever.getFrameAtTime(tUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                val raw: Bitmap? = retriever.getFrameAtTime(tUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                // MediaPipe 는 ARGB_8888 만 받아요 (기기에 따라 RGB_565 등으로 나올 수 있음)
+                val bitmap = raw?.let { if (it.config == Bitmap.Config.ARGB_8888) it else it.copy(Bitmap.Config.ARGB_8888, false) }
                 if (bitmap != null) {
                     val mpImage = BitmapImageBuilder(bitmap).build()
                     val result = landmarker.detectForVideo(mpImage, tUs / 1000L)

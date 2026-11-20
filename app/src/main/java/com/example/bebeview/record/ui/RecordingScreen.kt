@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -94,6 +95,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import kotlin.coroutines.resume
 
@@ -112,6 +114,8 @@ private class ActiveRecording(val recording: Recording, val outputFile: File) {
     var startMs = SystemClock.elapsedRealtime()
     /** 그만 찍기 / 처음부터: 결과를 버림 */
     var discard = false
+    /** 녹화 실패 원인 (오류 화면에 표시) */
+    var failReason: String? = null
 }
 
 private val CloseIcon = strokeIcon("close", 12f, 12f, 1.83f, Color.White, "M1 1l10 10M11 1L1 11")
@@ -180,10 +184,11 @@ fun RecordingScreen(taskType: TaskType) {
         phase = Phase.ANALYZING
         a.recording.stop()
         scope.launch {
-            val file = a.finalized.await()
+            // 기기에 따라 녹화 완료 알림이 안 오는 경우가 있어 15초까지만 기다려요
+            val file = withTimeoutOrNull(15_000) { a.finalized.await() }
             stopCamera()
             if (file == null) {
-                errorMsg = "녹화된 영상을 찾지 못했어요"
+                errorMsg = "녹화된 영상을 찾지 못했어요\n[${a.failReason ?: "녹화 완료 알림 없음"}]"
                 phase = Phase.ERROR
                 return@launch
             }
@@ -252,7 +257,12 @@ fun RecordingScreen(taskType: TaskType) {
                 future.addListener({ cont.resume(future.get()) }, ContextCompat.getMainExecutor(context))
             }
             val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
-            val recorder = Recorder.Builder().setQualitySelector(QualitySelector.from(Quality.HD)).build()
+            // HD 를 우선 쓰고, 기기가 지원하지 않으면 SD·FHD 등 가까운 화질로 (기종마다 지원 화질이 달라요)
+            val selector = QualitySelector.fromOrderedList(
+                listOf(Quality.HD, Quality.SD, Quality.FHD),
+                FallbackStrategy.lowerQualityOrHigherThan(Quality.SD),
+            )
+            val recorder = Recorder.Builder().setQualitySelector(selector).build()
             val capture = VideoCapture.withOutput(recorder)
             provider.unbindAll()
             provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
@@ -261,7 +271,7 @@ fun RecordingScreen(taskType: TaskType) {
             if (phase == Phase.INIT) phase = Phase.PREP
         } catch (e: Exception) {
             // 권한은 있는데 카메라 연결에 실패한 경우 (다른 앱이 사용 중, 기기 오류 등)
-            errorMsg = "카메라를 켜지 못했어요. 다른 앱이 카메라를 쓰고 있다면 닫고 다시 시도해 주세요."
+            errorMsg = "카메라를 켜지 못했어요. 다른 앱이 카메라를 쓰고 있다면 닫고 다시 시도해 주세요.\n[${e.javaClass.simpleName}: ${e.message}]"
             phase = Phase.ERROR
         }
     }
@@ -289,7 +299,13 @@ fun RecordingScreen(taskType: TaskType) {
             delay(1000)
             countdown--
         }
-        val rec = startRecording(context, videoCapture)
+        val rec = try {
+            startRecording(context, videoCapture)
+        } catch (e: Exception) {
+            errorMsg = "녹화를 시작하지 못했어요\n[${e.javaClass.simpleName}: ${e.message}]"
+            phase = Phase.ERROR
+            return@LaunchedEffect
+        }
         if (rec == null) {
             errorMsg = "녹화를 시작하지 못했어요"
             phase = Phase.ERROR
@@ -543,6 +559,7 @@ private fun startRecording(context: Context, videoCapture: VideoCapture<Recorder
             is VideoRecordEvent.Start -> h.startMs = SystemClock.elapsedRealtime()
             is VideoRecordEvent.Finalize -> {
                 val ok = !event.hasError() || event.error == VideoRecordEvent.Finalize.ERROR_SOURCE_INACTIVE
+                if (event.hasError()) h.failReason = "녹화 오류 ${event.error}: ${event.cause?.message}"
                 if (h.discard) {
                     outputFile.delete()
                     h.finalized.complete(null)
