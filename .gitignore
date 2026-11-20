@@ -1,0 +1,17 @@
+# Gradle / 빌드
+.gradle/
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+
+# 기기마다 다른 설정 (SDK 경로, 웹 프로젝트 경로)
+local.properties
+
+# IDE
+*.iml
+/.idea/
+
+# OS
+.DS_Store
