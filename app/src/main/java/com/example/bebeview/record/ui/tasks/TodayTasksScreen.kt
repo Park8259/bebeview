@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bebeview.record.data.AppData
@@ -65,7 +64,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 // growthLens src/screens/todayTasks/index.tsx 포팅
-// Figma 부모 버전: "오늘의과제 4"(시작 전), "오늘의과제 3"(1개 완료 + 1개 다시 찍기)
+// Figma 최종본(Page 3): 시작 전 / 1개 완료 + 1개 다시 찍기. 선생님 메모 카드는 빠지고 알림 종으로만 열어요
 
 private enum class TaskState { Todo, Done, Retry }
 
@@ -111,7 +110,7 @@ fun TodayTasksScreen() {
     val chronological = correctedAgeMonths(profile.birthDate, null)
     val corrected = correctedAgeMonths(profile.birthDate, profile.gestationalWeeks)
 
-    val tasks = TaskType.ORDER.map { task ->
+    val tasks = TaskType.TODAY_ORDER.map { task ->
         val last = lastToday(records, task, today)
         val state = when {
             last == null -> TaskState.Todo
@@ -169,12 +168,12 @@ fun TodayTasksScreen() {
                     .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 14.dp),
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${TaskType.ORDER.size}개 중 ${doneCount}개 완료", style = bebeText(15.sp, Bebe.PTitle, bold = true))
+                    Text("${TaskType.TODAY_ORDER.size}개 중 ${doneCount}개 완료", style = bebeText(15.sp, Bebe.PTitle, bold = true))
                     Spacer(Modifier.weight(1f))
                     Text("전부 해도 2분이면 끝나요", style = bebeText(13.sp, Bebe.PGray))
                 }
                 Spacer(Modifier.height(12.dp))
-                val ratio = maxOf(doneCount.toFloat() / TaskType.ORDER.size, if (doneCount > 0) 0f else 0.04f)
+                val ratio = doneCount.toFloat() / TaskType.TODAY_ORDER.size
                 Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color.White)) {
                     Box(Modifier.fillMaxWidth(ratio).fillMaxHeight().background(Bebe.Brand, CircleShape))
                 }
@@ -191,32 +190,6 @@ fun TodayTasksScreen() {
                         else -> task.meta
                     }
                     TaskCard(task, state, sub, onStart = { nav.go(Route.TaskGuide(task)) })
-                }
-            }
-
-            // 선생님 메모
-            if (memo != null) {
-                Spacer(Modifier.height(17.dp))
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(70.dp)
-                        .background(Bebe.BrandSoft, RoundedCornerShape(16.dp))
-                        .clickable(role = Role.Button) { memoOpen = true }
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Icon(BebeIcons.Memo, contentDescription = null, tint = Bebe.BrandDeep, modifier = Modifier.size(22.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("${MockDoctor.NAME} 선생님 메모가 도착했어요", style = bebeText(14.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp))
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            memo.text.replace("\n", " "), style = bebeText(13.sp, Bebe.PBody),
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    Icon(BebeIcons.ChevronRight, contentDescription = null, tint = Bebe.BrandDeep, modifier = Modifier.size(18.dp))
                 }
             }
         }

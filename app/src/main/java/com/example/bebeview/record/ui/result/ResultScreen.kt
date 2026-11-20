@@ -1,5 +1,6 @@
 package com.example.bebeview.record.ui.result
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.bebeview.R
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,9 +70,10 @@ fun ResultScreen(task: TaskType, recordId: String) {
     val replay = LastReplayHolder.get(task)
 
     Column(Modifier.fillMaxSize().background(Color.White)) {
+        BackTitleBar(task.label) { nav.back() }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = topSpace(56.dp), bottom = 24.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 24.dp),
         ) {
             RecordDetail(
                 task = task,
@@ -93,40 +98,45 @@ fun ResultScreen(task: TaskType, recordId: String) {
 private fun RetryView(task: TaskType, reason: String?) {
     val nav = LocalNav.current
     Column(Modifier.fillMaxSize().background(Color.White)) {
+        BackTitleBar(task.label) { nav.back() }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = topSpace(56.dp), bottom = 24.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 24.dp),
         ) {
-            TaskPill(task)
-            Spacer(Modifier.height(15.dp))
             Text("다시 한번 찍어볼까요?", style = bebeText(24.sp, Bebe.PTitle, bold = true, lineHeight = 32.sp))
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
-                "기록이 잘못된 게 아니라, 화면에서 아이${if (task == TaskType.BALL_PLAY) "나 공이" else "가"} 잘 안보여서 정확히 잴 수 없었어요.",
+                "기록이 잘못된 게 아니라, 화면에서 아이${if (task == TaskType.BALL_PLAY) "나 공이" else "가"}\n잘 안보여서 정확히 잴 수 없었어요.",
                 style = bebeText(15.sp, Bebe.PGray, lineHeight = 22.sp),
             )
 
+            // 사진 + 구체적인 이유 (Figma: 352×217, 사진 168)
             Spacer(Modifier.height(22.dp))
             val shape = RoundedCornerShape(16.dp)
             Column(Modifier.fillMaxWidth().clip(shape).border(1.dp, Bebe.PLine, shape)) {
-                Box(Modifier.fillMaxWidth().height(168.dp).background(Bebe.BrandPhoto), contentAlignment = Alignment.Center) {
-                    Icon(BebeIcons.ImagePlaceholder, null, tint = Bebe.BrandIcon, modifier = Modifier.size(22.dp))
-                }
+                Image(
+                    painterResource(R.drawable.retry_photo),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(168.dp).background(Bebe.BrandPhoto),
+                )
                 Row(
-                    Modifier.padding(16.dp),
+                    Modifier.fillMaxWidth().height(49.dp).padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Icon(BebeIcons.Question, null, tint = Bebe.BrandDeep, modifier = Modifier.size(18.dp))
+                    Icon(BebeIcons.Info, null, tint = Bebe.BrandDeep, modifier = Modifier.size(18.dp))
                     Text(reason ?: "아이가 화면에 충분히 보이지 않았어요", style = bebeText(14.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp))
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
-            Text("이렇게 하면 잘 찍혀요", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp))
+            Spacer(Modifier.height(30.dp))
+            Text("이렇게 하면 잘 찍혀요", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp))
             Spacer(Modifier.height(16.dp))
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                task.retryTips.forEachIndexed { i, tip -> Text("${i + 1}. $tip", style = bebeText(15.sp, Bebe.PBody)) }
+                task.retryTips.forEachIndexed { i, tip ->
+                    Text("${i + 1}. $tip", style = bebeText(15.sp, Bebe.PBody, lineHeight = 18.sp))
+                }
             }
         }
         BottomBar {
@@ -139,6 +149,22 @@ private fun RetryView(task: TaskType, reason: String?) {
                 modifier = Modifier.fillMaxWidth().clickable(role = Role.Button) { nav.tab(Route.Tasks) },
             )
         }
+    }
+}
+
+/** 상단: 뒤로 + 과제 이름 (Figma: 화살표 24 · 18px 굵게, 위에서 67) */
+@Composable
+fun BackTitleBar(title: String, onBack: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(topSpace(100.dp, minExtra = 40.dp)).padding(start = 17.dp, end = 16.dp, bottom = 9.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            BebeIcons.Back, "뒤로 가기", tint = Bebe.PTitle,
+            modifier = Modifier.size(24.dp).clickable(role = Role.Button, onClick = onBack),
+        )
+        Text(title, style = bebeText(18.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp))
     }
 }
 

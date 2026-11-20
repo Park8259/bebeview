@@ -42,11 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bebeview.R
@@ -83,7 +79,7 @@ private fun dayKey(ts: Long) = cal(ts).let { "${it.get(Calendar.YEAR)}-${it.get(
 /** 변화 방향만 사실대로 (좋다/나쁘다로 읽히는 말은 쓰지 않음) */
 internal fun trendWord(first: Double, last: Double, unit: String): String = when {
     first == last -> "같음"
-    unit == "seconds" -> if (last < first) "짧아짐" else "길어짐"
+    unit == "seconds" -> if (last < first) "빨라짐" else "느려짐"
     else -> if (last > first) "늘어남" else "줄어듦"
 }
 
@@ -140,28 +136,28 @@ fun ClinicSummaryScreen() {
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = topSpace(69.dp), bottom = 24.dp)) {
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = topSpace(59.dp), bottom = 0.dp)) {
             Text("진료 요약이 도착했어요", style = bebeText(24.sp, Bebe.PTitle, bold = true, lineHeight = 32.sp))
 
             // 아이 정보
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(37.dp))
             Row(
                 Modifier.padding(horizontal = 18.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(26.dp),
+                horizontalArrangement = Arrangement.spacedBy(27.dp),
             ) {
                 Image(
                     painterResource(R.drawable.child_photo),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(110.dp).clip(CircleShape),
+                    modifier = Modifier.size(110.dp, 113.dp).clip(CircleShape),
                 )
                 Column {
-                    Text("${profile.name} (${age}개월)", style = bebeText(16.sp, Bebe.InkSub, bold = true, lineHeight = 24.sp))
-                    Spacer(Modifier.height(12.dp))
-                    Text("${by}년 ${bm}월 ${bd}일생", style = bebeText(14.sp, Bebe.InkSub, lineHeight = 20.sp))
+                    Text("${profile.name} (${age}개월)", style = bebeText(16.sp, Color(0xFF1E2A44), bold = true, lineHeight = 20.sp))
+                    Spacer(Modifier.height(8.dp))
+                    Text("${by}년 ${bm}월 ${bd}일생", style = bebeText(14.sp, Bebe.InkSub, lineHeight = 18.sp))
                     if (d.first != null && d.last != null) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(11.dp))
                         Text(
                             "기록 기간\n${fmtYmd(d.first.recordedAt)} ~ ${fmtMd(d.last.recordedAt)} (${d.weeks}주)",
                             style = bebeText(13.sp, Color(0xFF777777), lineHeight = 19.sp),
@@ -169,25 +165,15 @@ fun ClinicSummaryScreen() {
                     }
                 }
             }
-            Spacer(Modifier.height(20.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(
-                    BebeIcons.Question, contentDescription = null, tint = Bebe.PLight,
-                    modifier = Modifier.padding(top = 1.dp).size(14.dp),
-                )
-                Text(
-                    "보호자가 집에서 찍은 영상을 바탕으로 한 관찰 기록이에요.\n진단이나 발달 판정이 아니에요.",
-                    style = bebeText(12.sp, Bebe.PGray, lineHeight = 16.sp),
-                )
-            }
+            Spacer(Modifier.height(46.dp))
 
             // 과제 지표
             Card {
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("과제 지표", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp), modifier = Modifier.alignByBaseline())
+                    Text("과제 지표", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp), modifier = Modifier.alignByBaseline())
                     Text("첫 기록 → 최근", style = bebeText(12.sp, Bebe.PGray, lineHeight = 16.sp), modifier = Modifier.alignByBaseline())
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
                 if (d.taskRows.isEmpty()) {
                     Text("아직 기록이 없어요", style = bebeText(14.sp, Bebe.PGray, lineHeight = 20.sp), modifier = Modifier.padding(vertical = 12.dp))
                 }
@@ -195,89 +181,69 @@ fun ClinicSummaryScreen() {
                     if (i > 0) Divider(Bebe.PLine)
                     val num = bebeText(14.sp, Bebe.PGray, lineHeight = 20.sp).copy(fontFeatureSettings = "tnum")
                     Row(
-                        Modifier.padding(
-                            top = if (i == 0) 0.dp else 12.dp,
-                            bottom = if (i == d.taskRows.lastIndex) 0.dp else 12.dp,
-                        ),
+                        Modifier.height(59.dp).padding(start = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        TaskIllust(task, 34.dp)
+                        TaskIllust(task, 42.dp)
                         Text(
                             task.label,
-                            style = bebeText(14.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp),
-                            modifier = Modifier.weight(1f).padding(start = 10.dp),
+                            style = bebeText(14.sp, Bebe.PTitle, bold = true, lineHeight = 17.sp),
+                            modifier = Modifier.weight(1f).padding(start = 13.dp),
                         )
-                        Text("${jsNum(f.value)}${unitOf(f.unit)} → ", style = num)
+                        Text("${jsNum(f.value)}${unitOf(f.unit)} →", style = num)
                         Text(
                             "${jsNum(l.value)}${unitOf(l.unit)}",
-                            style = num.copy(color = Bebe.PTitle, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.width(48.dp),
+                            style = bebeText(18.sp, Bebe.PTitle, bold = true, lineHeight = 22.sp).copy(fontFeatureSettings = "tnum"),
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.width(55.dp),
                             maxLines = 1,
                             softWrap = false,
                         )
                         Text(
                             trendWord(f.value, l.value, l.unit),
-                            style = bebeText(12.sp, Bebe.BrandDeep, bold = true, lineHeight = 16.sp),
+                            style = bebeText(12.sp, Bebe.BrandDeep, bold = true, lineHeight = 14.sp),
                             textAlign = TextAlign.End,
-                            modifier = Modifier.width(48.dp),
+                            modifier = Modifier.width(52.dp),
                         )
                     }
                 }
             }
 
-            // 공통 지표
-            if (d.a0 != null && d.a1 != null) {
-                Card {
-                    Text("공통 지표", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp))
-                    Spacer(Modifier.height(16.dp))
-                    Row(Modifier.padding(horizontal = 18.dp)) {
-                        listOf(true, false).forEach { orient ->
-                            Column(Modifier.weight(1f)) {
-                                Text(if (orient) "보호자 지향 비율" else "활동량 비율", style = bebeText(13.sp, Bebe.PGray))
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    buildAnnotatedString {
-                                        append("${ambientPct(d.a0, orient)}% → ")
-                                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("${ambientPct(d.a1, orient)}%") }
-                                    },
-                                    style = bebeText(15.sp, Bebe.PTitle),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
             // 수행 이력
-            Card {
-                Text("수행 이력", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp))
-                Spacer(Modifier.height(20.dp))
-                Row(Modifier.padding(horizontal = 10.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    listOf("${d.doneCount}회" to "완료한 과제", "${d.dayCount}일" to "기록한 날", "${d.retryCount}회" to "재촬영").forEach { (v, l) ->
-                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                Modifier.fillMaxWidth().height(36.dp).border(1.dp, Color(0xFFE6E6E6), CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) { Text(v, style = bebeText(20.sp, Bebe.PTitle, bold = true, lineHeight = 28.sp)) }
+            Card(top = 29.dp) {
+                Text("수행 이력", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp))
+                Spacer(Modifier.height(15.dp))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 7.dp), horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                    listOf(
+                        Triple(SummaryIcons.DoneTask, "${d.doneCount}회", "완료한 과제"),
+                        Triple(SummaryIcons.RecordDay, "${d.dayCount}일", "기록한 날"),
+                        Triple(SummaryIcons.Retake, "${d.retryCount}회", "재촬영"),
+                    ).forEach { (icon, v, l) ->
+                        Column(
+                            Modifier.weight(1f).height(85.dp).background(Bebe.Brand, RoundedCornerShape(8.dp)).padding(top = 14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(17.dp))
                             Spacer(Modifier.height(10.dp))
-                            Text(l, style = bebeText(12.sp, Bebe.PGray, lineHeight = 16.sp))
+                            Text(v, style = bebeText(14.sp, Color.White, bold = true, lineHeight = 17.sp))
+                            Spacer(Modifier.height(3.dp))
+                            Text(l, style = bebeText(11.sp, Color.White, lineHeight = 13.sp))
                         }
                     }
                 }
             }
 
-            // 선생님께 물어볼 것
-            Spacer(Modifier.height(32.dp))
-            Column(Modifier.padding(horizontal = 18.dp)) {
+            // 선생님께 물어볼 것 (테두리 카드)
+            Card(top = 22.dp) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("선생님께 물어볼 것", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp), modifier = Modifier.weight(1f))
+                    Text("선생님께 물어볼 것", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp), modifier = Modifier.weight(1f))
                     Text(
                         "+ 추가",
                         style = bebeText(13.sp, Bebe.BrandDeep, bold = true),
                         modifier = Modifier.clickable(role = Role.Button) { adding = true },
                     )
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(17.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     questions.forEachIndexed { i, q ->
                         Row(
@@ -287,7 +253,7 @@ fun ClinicSummaryScreen() {
                                 .padding(horizontal = 25.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Icon(BebeIcons.Question, contentDescription = null, tint = Bebe.PLight, modifier = Modifier.padding(top = 2.dp).size(18.dp))
+                            Icon(BebeIcons.Memo, contentDescription = null, tint = Bebe.PGray, modifier = Modifier.padding(top = 1.dp).size(18.dp))
                             Text(q, style = bebeText(14.sp, Bebe.PBody, lineHeight = 17.sp), modifier = Modifier.weight(1f))
                             Text(
                                 "×",
@@ -342,14 +308,18 @@ fun ClinicSummaryScreen() {
 
 
         // 하단 버튼 (웹: 고정이 아니라 내용 끝에 붙어 함께 스크롤돼요. 하단 탭만 고정)
+        Spacer(Modifier.height(53.dp))
         Divider(Bebe.PLine)
         Row(
-            Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 20.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().background(Color.White).padding(start = 19.dp, end = 22.dp, top = 13.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(11.dp),
         ) {
             Row(
-                Modifier.width(132.dp).height(54.dp).clickable(role = Role.Button) {
+                Modifier.width(130.dp).height(43.dp)
+                    .border(1.dp, Bebe.PLine, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(role = Role.Button) {
                     printSummary(context, profile, age, d, questions.toList())
                 },
                 verticalAlignment = Alignment.CenterVertically,
@@ -359,7 +329,7 @@ fun ClinicSummaryScreen() {
                 Text("PDF 저장", style = bebeText(16.sp, Bebe.PTitle, bold = true))
             }
             Box(
-                Modifier.weight(1f).height(54.dp).background(Bebe.Brand, RoundedCornerShape(14.dp))
+                Modifier.weight(1f).height(43.dp).background(Bebe.Brand, RoundedCornerShape(12.dp))
                     .clickable(role = Role.Button) { shareOpen = true },
                 contentAlignment = Alignment.Center,
             ) { Text("의사에게 공유하기", style = bebeText(16.sp, Color.White, bold = true)) }
@@ -375,10 +345,10 @@ fun ClinicSummaryScreen() {
     }
 }
 
-/** 테두리 카드 (mt-16, 둥근 16, px-17 py-18) */
+/** 테두리 카드 (Figma: 둥근 16, 안쪽 여백 16~19) */
 @Composable
-private fun Card(content: @Composable ColumnScope.() -> Unit) {
-    Spacer(Modifier.height(16.dp))
+private fun Card(top: androidx.compose.ui.unit.Dp = 16.dp, content: @Composable ColumnScope.() -> Unit) {
+    Spacer(Modifier.height(top))
     Column(
         Modifier
             .fillMaxWidth()

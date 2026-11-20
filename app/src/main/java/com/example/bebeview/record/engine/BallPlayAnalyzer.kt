@@ -30,7 +30,9 @@ object BallPlayAnalyzer {
         val detected = frames.count { it.ball != null }
         val ballDetectedRatio = detected.toDouble() / maxOf(1, frames.size)
         if (ballDetectedRatio < MIN_BALL_DETECTED_RATIO) {
-            return AnalysisResult(status = "retry_needed", retryReason = "공이 화면에 충분히 보이지 않았습니다")
+            val start = RetryReason.longestMissingStart(frames.map { it.t }, frames.map { it.ball != null })
+            val reason = RetryReason.sentence("공이", "화면 밖으로 나갔어요", start, "공이 화면에 충분히 보이지 않았어요")
+            return AnalysisResult(status = "retry_needed", retryReason = reason)
         }
 
         // 프레임별 공 주인

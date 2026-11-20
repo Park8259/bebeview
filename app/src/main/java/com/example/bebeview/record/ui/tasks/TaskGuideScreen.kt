@@ -38,27 +38,40 @@ import com.example.bebeview.ui.components.Divider
 import com.example.bebeview.ui.components.Pill
 import com.example.bebeview.ui.components.TaskIllust
 import com.example.bebeview.ui.components.bottomSpace
+import com.example.bebeview.ui.components.strokeIcon
 import com.example.bebeview.ui.components.topSpace
 import com.example.bebeview.ui.theme.Bebe
 import com.example.bebeview.ui.theme.bebeText
 
 // growthLens src/screens/taskGuide/index.tsx 포팅
-// Figma 부모 버전 "공 주고받기" — 상단 제목줄과 하단 버튼은 프레임 밖 부품을 조립함
+// Figma 최종본(Page 3) "호명반응" 안내
 
 /** 촬영 예시 이미지가 있는 과제 */
 private val GUIDE_IMAGE: Map<TaskType, Int> = mapOf(TaskType.NAME_RESPONSE to R.drawable.guide_name_response)
 
+/** 소리 끔 (Figma "아이콘_3": 스피커 + 사선) */
+private val MuteIcon = strokeIcon(
+    "mute", 20f, 20f, 1.54f, Color(0xFF767676),
+    "M0.77 7.95H5.9L12.05 2.82V17.18L5.9 12.05H0.77V7.95Z",
+    "M15.64 6.92C17.35 8.97 17.35 11.03 15.64 13.08",
+    "M0.77 19.23L19.23 0.77",
+)
+
 private val CHECKLIST = listOf(
     BebeIcons.Phone to "폰을 세워 두세요",
     BebeIcons.Ruler to "아이 전신이 보이도록 2~3m 떨어뜨려 주세요",
-    BebeIcons.Sun to "밝은 곳에서 찍어 주세요",
+    MuteIcon to "TV · 음악을 끄고 조용한 곳에서 찍어 주세요",
     BebeIcons.Pin to "매번 같은 장소에서 찍으면 더 정확해요",
 )
 
 @Composable
 fun TaskGuideScreen(task: TaskType) {
     val nav = LocalNav.current
-    val count = AppData.records.count { it.taskType == task.apiName }
+    // 새 기록: 선생님이 마지막으로 메모를 남긴 날 이후 이 과제 기록 수 (메모가 없으면 전체)
+    val lastNote = AppData.notes.filter { it.isShared }.maxOfOrNull { it.date }
+    val count = AppData.records.count { r ->
+        r.taskType == task.apiName && (lastNote == null || dateOf(r.recordedAt) > lastNote)
+    }
 
     Column(Modifier.fillMaxSize().background(Color.White)) {
         // 상단: 뒤로 + 제목 (h-100, 아래 정렬)
@@ -107,28 +120,28 @@ fun TaskGuideScreen(task: TaskType) {
                 }
             }
 
-            // 진료일 칩은 뺐어요: 보호자가 실제로 잡은 진료가 아니라 데모 데이터라서
+            // Figma: "새 기록 3" · "11/20 진료" 칩. 진료일은 아직 저장하는 곳이 없어 새 기록 칩만 보여줘요
             if (count > 0) {
                 Spacer(Modifier.height(14.dp))
-                Row(Modifier.padding(horizontal = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Pill("기록 ${count}회")
+                Row(Modifier.padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Pill("새 기록 $count")
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(if (count > 0) 22.dp else 14.dp))
             Text(
                 task.label, style = bebeText(26.sp, Bebe.PTitle, bold = true, lineHeight = 31.sp),
-                modifier = Modifier.padding(horizontal = 10.dp),
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(11.dp))
             Text(
-                task.guide, style = bebeText(16.sp, Bebe.PBody, lineHeight = 24.sp),
-                modifier = Modifier.padding(horizontal = 10.dp),
+                task.guide, style = bebeText(15.sp, Bebe.PBody, lineHeight = 18.sp),
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
 
             // 준비물: Figma "호명반응" 안내처럼 과제 그림 + 한 줄
             if (task == TaskType.BALL_PLAY || task == TaskType.NAME_RESPONSE) {
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(32.dp))
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -150,17 +163,17 @@ fun TaskGuideScreen(task: TaskType) {
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(26.dp))
             Text(
-                "찍기 전에 확인해요", style = bebeText(18.sp, Bebe.PTitle, bold = true, lineHeight = 28.sp),
-                modifier = Modifier.padding(horizontal = 10.dp),
+                "찍기 전에 확인해요", style = bebeText(18.sp, Bebe.PTitle, bold = true, lineHeight = 21.sp),
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
-            Spacer(Modifier.height(16.dp))
-            Column(Modifier.padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(26.dp)) {
+            Spacer(Modifier.height(18.dp))
+            Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(19.dp)) {
                 CHECKLIST.forEach { (icon, text) ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(icon, contentDescription = null, tint = Bebe.PGray, modifier = Modifier.size(20.dp))
-                        Text(text, style = bebeText(15.sp, Bebe.PTitle))
+                        Text(text, style = bebeText(15.sp, Bebe.PTitle, lineHeight = 18.sp))
                     }
                 }
             }
@@ -178,9 +191,12 @@ fun TaskGuideScreen(task: TaskType) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
             ) {
-                Icon(BebeIcons.Video, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Icon(BebeIcons.PlayFill, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                 Text("촬영 시작", style = bebeText(16.sp, Color.White, bold = true))
             }
         }
     }
 }
+
+private fun dateOf(ts: Long): String =
+    java.time.Instant.ofEpochMilli(ts).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()

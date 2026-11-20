@@ -58,7 +58,7 @@ fun CheckRow(ok: Boolean, text: String) {
             Modifier.size(22.dp).background(if (ok) Bebe.Brand else Bebe.PLight, CircleShape),
             contentAlignment = Alignment.Center,
         ) { Icon(BebeIcons.Check, null, tint = Color.White, modifier = Modifier.size(13.dp)) }
-        Text(text, style = bebeText(15.sp, Color.White))
+        Text(text, style = bebeText(15.sp, if (ok) Color.White else Bebe.PLight, bold = true, lineHeight = 18.sp))
     }
 }
 

@@ -77,9 +77,12 @@ object ImitationAnalyzer {
             .map { it.t to PoseAnalyzer.identifyPersons(it).child }
 
         // 무효: 아이 상반신이 잘 안 보임
-        val valid = windowFrames.count { (_, lm) -> lm != null && torsoVisibility(lm) >= MIN_VIS }
+        val seen = windowFrames.map { (_, lm) -> lm != null && torsoVisibility(lm) >= MIN_VIS }
+        val valid = seen.count { it }
         if (valid.toDouble() / maxOf(1, windowFrames.size) < 0.5) {
-            return AnalysisResult(status = "retry_needed", retryReason = "아이 몸이 충분히 보이지 않았습니다")
+            val start = RetryReason.longestMissingStart(windowFrames.map { it.first }, seen)
+            val reason = RetryReason.sentence("아이 몸이", "화면 밖으로 나갔어요", start, "아이 몸이 화면에 충분히 보이지 않았어요")
+            return AnalysisResult(status = "retry_needed", retryReason = reason)
         }
 
         val holdFrames = (HOLD_SEC * fps).roundToInt()

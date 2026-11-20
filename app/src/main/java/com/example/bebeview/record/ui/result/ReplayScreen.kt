@@ -48,19 +48,10 @@ fun ReplayScreen(recordId: String) {
         .sortedByDescending { it.recordedAt }
 
     Column(Modifier.fillMaxSize().background(Color.White)) {
-        // 상단: 뒤로 (h-100, 아래 정렬)
-        Box(
-            Modifier.fillMaxWidth().height(topSpace(100.dp, minExtra = 48.dp)).padding(start = 16.dp, bottom = 12.dp),
-            contentAlignment = Alignment.BottomStart,
-        ) {
-            Icon(
-                BebeIcons.Back, "뒤로 가기", tint = Bebe.PTitle,
-                modifier = Modifier.size(24.dp).clickable(role = Role.Button) { nav.back() },
-            )
-        }
+        BackTitleBar(task.label) { nav.back() }
 
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 24.dp),
         ) {
             RecordDetail(
                 task = task,

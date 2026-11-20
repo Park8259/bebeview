@@ -25,7 +25,7 @@ enum class TaskType(
         label = "호명 반응",
         short = "부르면 얼마나 빨리 돌아보는지",
         meta = "약 20초",
-        guide = "아이가 다른 곳을 볼 때 이름을 불러요.\n소리가 나면 바로 불러주세요.",
+        guide = "아이 뒤나 옆에서 이름을 불러주세요.\n돌아보는 모습이 화면에 보이게 해주세요.",
         prepTitle = "아이 옆에 편하게 앉아주세요",
         analyzeStep = "고개를 돌리는 순간",
         retryTips = listOf(
@@ -70,8 +70,11 @@ enum class TaskType(
     val needsStimulus: Boolean get() = this != BALL_PLAY
 
     companion object {
-        /** 과제를 보여주는 순서 (오늘의 과제, 변화, 진료 요약 공통). 호명 반응이 맨 위 */
-        val ORDER = listOf(NAME_RESPONSE, BALL_PLAY, IMITATION)
+        /** 과제를 보여주는 순서 (변화, 진료 요약, 기록 필터). Figma 최종본 기준 */
+        val ORDER = listOf(NAME_RESPONSE, IMITATION, BALL_PLAY)
+
+        /** 오늘의 과제 카드 순서 ("…차례예요" 도 이 순서로 다음 과제를 골라요) */
+        val TODAY_ORDER = listOf(BALL_PLAY, NAME_RESPONSE, IMITATION)
 
         fun fromApi(name: String): TaskType = entries.firstOrNull { it.apiName == name } ?: NAME_RESPONSE
     }

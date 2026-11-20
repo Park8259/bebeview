@@ -114,6 +114,43 @@ class PoseMetricsTest {
     }
 
     @Test
+    fun ballPlay_retryReason_saysWhenBallLeft() {
+        // 공이 9초까지만 보이고 그 뒤로 사라짐 → "공이 9초쯤 화면 밖으로 나갔어요"
+        val ball = Box(0.25f, 0.6f, 0.35f, 0.7f)
+        val tr = track(60.0) { t -> PoseFrame(t, listOf(child(t), caregiver), ball = if (t < 9.0) ball else null) }
+        val r = BallPlayAnalyzer.analyze(tr)
+        assertEquals("retry_needed", r.status)
+        assertEquals("공이 9초쯤 화면 밖으로 나갔어요", r.retryReason)
+    }
+
+    @Test
+    fun ballPlay_retryReason_fromStart() {
+        val tr = track(60.0) { t -> PoseFrame(t, listOf(child(t), caregiver), ball = null) }
+        assertEquals("공이 처음부터 화면에 잘 보이지 않았어요", BallPlayAnalyzer.analyze(tr).retryReason)
+    }
+
+    @Test
+    fun imitation_retryReason_saysWhenChildLeft() {
+        // 신호 5초, 아이가 8초부터 안 보임 → 감시 창(5~20초) 중 8초부터 가장 길게 빠짐
+        val tr = track(30.0) { t -> PoseFrame(t, if (t < 8.0) listOf(child(t), caregiver) else emptyList()) }
+        val r = ImitationAnalyzer.analyze(tr, 5000)
+        assertEquals("retry_needed", r.status)
+        assertEquals("아이 몸이 8초쯤 화면 밖으로 나갔어요", r.retryReason)
+    }
+
+    @Test
+    fun nameResponse_retryReason_saysWhenFaceLost() {
+        // 20초 중 12초부터 얼굴이 안 보임 (검출 60% < 70%)
+        val frames = (0 until 300).map { i ->
+            val t = i / 15.0
+            if (t < 12.0) FaceFrame(t, 0.0, true) else FaceFrame(t, null, false)
+        }
+        val r = NameResponseAnalyzer.analyze(FaceTrack(20.0, 15, frames), 5000)
+        assertEquals("retry_needed", r.status)
+        assertEquals("아이 얼굴이 12초쯤 잘 보이지 않았어요", r.retryReason)
+    }
+
+    @Test
     fun ambient_bothInFrame_and_missing() {
         val both = track(30.0) { t -> PoseFrame(t, listOf(child(t), caregiver)) }
         val a = AmbientAnalyzer.measure(both)

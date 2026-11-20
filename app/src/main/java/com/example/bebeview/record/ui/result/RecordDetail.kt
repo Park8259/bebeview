@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bebeview.record.data.Ambient
@@ -88,23 +87,21 @@ fun RecordDetail(
     val prevAmbient = earlier.firstOrNull { it.result.ambient != null }?.result?.ambient
 
     Column {
-        TaskPill(task)
-        Spacer(Modifier.height(15.dp))
         Text(title, style = bebeText(24.sp, Bebe.PTitle, bold = true, lineHeight = 32.sp))
 
         // 이번 기록
-        Spacer(Modifier.height(34.dp))
+        Spacer(Modifier.height(11.dp))
         Row(
-            Modifier.fillMaxWidth().height(115.dp).background(Bebe.Brand, RoundedCornerShape(18.dp)).padding(horizontal = 22.dp),
+            Modifier.fillMaxWidth().height(115.dp).background(Bebe.Brand, RoundedCornerShape(18.dp)).padding(start = 28.dp, end = 30.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
                 if (recordedAt != null) {
-                    Text(fmtDateTime(recordedAt), style = bebeText(13.sp, Color.White, bold = true))
-                    Spacer(Modifier.height(12.dp))
+                    Text(fmtDateTime(recordedAt), style = bebeText(15.sp, Color.White, bold = true, lineHeight = 18.sp))
+                    Spacer(Modifier.height(6.dp))
                 }
-                Text(metric?.label ?: "", style = bebeText(14.sp, Color.White, lineHeight = 22.sp))
+                Text(metric?.label ?: "", style = bebeText(14.sp, Color.White, lineHeight = 20.sp))
             }
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -122,21 +119,27 @@ fun RecordDetail(
         if (prev != null && prevMetric != null && metric != null) {
             Spacer(Modifier.height(34.dp))
             Text("지난 기록과 비교", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp))
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             Text(compareText(prevMetric.value, metric.value, metric.unit), style = bebeText(14.sp, Bebe.BrandDeep, bold = true, lineHeight = 20.sp))
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(13.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(Modifier.weight(1f).background(Bebe.PCard, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 16.dp)) {
-                    Text(fmtDay(prev.recordedAt), style = bebeText(12.sp, Bebe.PGray, lineHeight = 16.sp))
-                    Spacer(Modifier.height(8.dp))
+                Column(
+                    Modifier.weight(1f).height(78.dp).background(Bebe.PCard, RoundedCornerShape(16.dp)),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(fmtDay(prev.recordedAt), style = bebeText(12.sp, Bebe.PGray, lineHeight = 14.sp))
+                    Spacer(Modifier.height(6.dp))
                     Text("${fmtNum(prevMetric.value)}$unit", style = bebeText(20.sp, Bebe.PGray, bold = true, lineHeight = 28.sp))
                 }
                 Icon(BebeIcons.ChevronRight, null, tint = Bebe.BrandIcon, modifier = Modifier.size(20.dp))
                 Column(
-                    Modifier.weight(1f).border(1.dp, Bebe.Brand, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 16.dp),
+                    Modifier.weight(1f).height(78.dp).border(2.dp, Bebe.Brand, RoundedCornerShape(16.dp)),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Text(currentLabel, style = bebeText(12.sp, Bebe.BrandDeep, bold = true, lineHeight = 16.sp))
-                    Spacer(Modifier.height(8.dp))
+                    Text(currentLabel, style = bebeText(12.sp, Bebe.BrandDeep, bold = true, lineHeight = 14.sp))
+                    Spacer(Modifier.height(6.dp))
                     Text("${fmtNum(metric.value)}$unit", style = bebeText(20.sp, Bebe.PTitle, bold = true, lineHeight = 28.sp))
                 }
             }
@@ -144,22 +147,22 @@ fun RecordDetail(
 
         // 공통 지표
         result.ambient?.let { a ->
-            Spacer(Modifier.height(36.dp))
-            Text("함께 기록된 공통 지표", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp))
-            Spacer(Modifier.height(6.dp))
-            Text("모든 과제에서 측정", style = bebeText(13.sp, Bebe.PGray))
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(38.dp))
+            Text("함께 기록된 공통 지표", style = bebeText(16.sp, Bebe.PTitle, bold = true, lineHeight = 20.sp))
+            Spacer(Modifier.height(4.dp))
+            Text("모든 과제에서 측정", style = bebeText(13.sp, Bebe.PGray, lineHeight = 16.sp))
+            Spacer(Modifier.height(11.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AmbientBox("보호자 지향 비율", ratio(a, a.caregiverOrientSec), prevAmbient?.let { ratio(it, it.caregiverOrientSec) }, Modifier.weight(1f))
                 AmbientBox("활동량 비율", ratio(a, a.activitySec), prevAmbient?.let { ratio(it, it.activitySec) }, Modifier.weight(1f))
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(BebeIcons.Question, null, tint = Bebe.PLight, modifier = Modifier.padding(top = 1.dp).size(16.dp))
+            Icon(BebeIcons.Info, null, tint = Bebe.PLight, modifier = Modifier.size(16.dp))
             Text(
-                "진단이 아닌 관찰 기록이에요.\n궁금한 점은 진료 때 기록을 보여주며 상담해 보세요.",
+                "진단이 아닌 관찰 기록이에요. 궁금한 점은 진료 때 기록을\n보여주며 상담해 보세요.",
                 style = bebeText(13.sp, Bebe.PGray, lineHeight = 16.sp),
             )
         }
@@ -177,14 +180,14 @@ private fun compareText(prev: Double, now: Double, unit: String): String {
 @Composable
 private fun AmbientBox(label: String, now: Int, prev: Int?, modifier: Modifier) {
     Column(
-        modifier.border(1.dp, Bebe.PLine, RoundedCornerShape(16.dp)).padding(start = 14.dp, end = 14.dp, top = 16.dp, bottom = 14.dp),
+        modifier.height(105.dp).border(1.dp, Bebe.PLine, RoundedCornerShape(16.dp)).padding(start = 22.dp, end = 14.dp, top = 16.dp),
     ) {
-        Text(label, style = bebeText(13.sp, Bebe.PGray))
-        Spacer(Modifier.height(8.dp))
-        Text("$now%", style = bebeText(22.sp, Bebe.PTitle, bold = true))
+        Text(label, style = bebeText(13.sp, Bebe.PGray, lineHeight = 16.sp))
+        Spacer(Modifier.height(9.dp))
+        Text("$now%", style = bebeText(22.sp, Bebe.PTitle, bold = true, lineHeight = 26.sp))
         if (prev != null) {
             Spacer(Modifier.height(8.dp))
-            Text("지난번 $prev%", style = bebeText(12.sp, Bebe.BrandDeep, bold = true, lineHeight = 16.sp).copy(fontWeight = FontWeight.Bold))
+            Text("지난번 $prev%", style = bebeText(12.sp, Bebe.PGray, lineHeight = 14.sp))
         }
     }
 }

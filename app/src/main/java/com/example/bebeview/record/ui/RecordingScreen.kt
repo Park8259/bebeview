@@ -25,6 +25,7 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,7 +54,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
@@ -387,6 +391,21 @@ fun RecordingScreen(taskType: TaskType) {
         // 카메라 화면
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
         Box(Modifier.fillMaxSize().background(overlay))
+        if (live) {
+            // 아이 전신을 맞추는 점선 틀 (Figma "아이 전신이 점선 안에 들어오게 해주세요")
+            Canvas(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = topSpace(120.dp, minExtra = 70.dp), start = 48.dp, end = 48.dp)
+                    .height(360.dp),
+            ) {
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.8f),
+                    cornerRadius = CornerRadius(24.dp.toPx()),
+                    style = Stroke(width = 2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 8.dp.toPx()))),
+                )
+            }
+        }
 
         if (live) {
             // 상단: 닫기 · 과제 이름 · 녹화 시간
@@ -418,7 +437,7 @@ fun RecordingScreen(taskType: TaskType) {
             }
             // 가운데: 신호 횟수 / 남은 시간
             Column(
-                Modifier.fillMaxWidth().padding(top = 426.dp),
+                Modifier.fillMaxWidth().padding(top = 497.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(
@@ -432,8 +451,8 @@ fun RecordingScreen(taskType: TaskType) {
                         style = bebeText(20.sp, Color.White, bold = true, lineHeight = 28.sp),
                     )
                 }
-                Spacer(Modifier.height(16.dp))
-                Text("아이 전신이 화면에 들어오게 해주세요", style = bebeText(13.sp, Color.White))
+                Spacer(Modifier.height(15.dp))
+                Text("아이 전신이 점선 안에 들어오게 해주세요", style = bebeText(13.sp, Color.White))
             }
         } else {
             // 상단: 뒤로 + "폰 세우기"
@@ -455,8 +474,9 @@ fun RecordingScreen(taskType: TaskType) {
                     .padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                CheckRow(bright == true, if (bright == false) "조금 더 밝은 곳으로 옮겨주세요" else "밝기가 충분해요")
+                // 전신·공은 촬영 전에 따로 확인하지 않아서 안내 문구로 둬요 (밝기만 실제로 재요)
                 CheckRow(false, "아이 전신이 보이게 해주세요")
+                CheckRow(bright == true, if (bright == false) "조금 더 밝은 곳으로 옮겨주세요" else "밝기가 충분해요")
                 if (task == TaskType.BALL_PLAY) CheckRow(false, "공이 화면에 보이게 해주세요")
             }
         }
@@ -467,11 +487,16 @@ fun RecordingScreen(taskType: TaskType) {
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(Color.White, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = bottomSpace(40.dp)),
+                .padding(start = 24.dp, end = 24.dp, top = if (live) 20.dp else 26.dp, bottom = bottomSpace(40.dp)),
         ) {
             if (live) {
                 Text(
-                    "${if (task.needsStimulus) "소리가 나면 바로 시작해주세요" else "아이를 보며 편하게 놀아주세요"} · 끝나면 소리로 알려드려요",
+                    when (task) {
+                        // 호명 반응은 끝 소리가 없어요 (이름 부르는 신호와 헷갈리지 않게)
+                        TaskType.NAME_RESPONSE -> "소리가 나면 바로 이름을 불러주세요.\n${duration}초 뒤 자동으로 끝나요."
+                        TaskType.IMITATION -> "소리가 나면 바로 동작을 보여주세요.\n끝나면 소리로 알려드려요."
+                        TaskType.BALL_PLAY -> "아이를 보며 편하게 놀아주세요.\n끝나면 소리로 알려드려요."
+                    },
                     style = bebeText(14.sp, Bebe.PGray, lineHeight = 20.sp),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
@@ -482,21 +507,21 @@ fun RecordingScreen(taskType: TaskType) {
                     RoundButton("처음부터") { handleRestart() }
                 }
             } else {
-                Text(task.prepTitle, style = bebeText(20.sp, Bebe.PTitle, bold = true, lineHeight = 28.sp), modifier = Modifier.padding(horizontal = 8.dp))
-                Spacer(Modifier.height(12.dp))
+                Text(task.prepTitle, style = bebeText(20.sp, Bebe.PTitle, bold = true, lineHeight = 24.sp), modifier = Modifier.padding(horizontal = 10.dp))
+                Spacer(Modifier.height(16.dp))
                 Text(
-                    "시작을 누르고 아이 앞에 앉으면 ${COUNTDOWN_SEC}초 뒤 촬영이 시작되고, " +
+                    "시작을 누르고 아이 앞에 앉으면\n${COUNTDOWN_SEC}초 뒤 촬영이 시작되고, " +
                         "${if (duration == 60) "1분" else "${duration}초"} 뒤 " +
                         "${if (task == TaskType.NAME_RESPONSE) "자동으로 끝나요" else "소리로 알려드려요"}.",
-                    style = bebeText(14.sp, Bebe.PGray, lineHeight = 24.sp),
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = bebeText(15.sp, Bebe.PGray, lineHeight = 20.sp),
+                    modifier = Modifier.padding(horizontal = 10.dp),
                 )
                 Spacer(Modifier.height(20.dp))
                 if (phase == Phase.COUNTDOWN) {
                     Box(
                         Modifier.fillMaxWidth().height(58.dp).background(Bebe.PCard, RoundedCornerShape(14.dp)),
                         contentAlignment = Alignment.Center,
-                    ) { Text("${countdown}초 뒤 촬영 시작", style = bebeText(16.sp, Bebe.PBody, bold = true)) }
+                    ) { Text("${countdown}초 뒤 촬영 시작", style = bebeText(16.sp, Bebe.PLight, bold = true)) }
                 } else {
                     val ready = phase == Phase.PREP
                     Box(

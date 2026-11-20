@@ -46,7 +46,9 @@ object NameResponseAnalyzer {
 
         val totalDetected = frames.count { it.detected }
         if (totalDetected.toDouble() / frames.size < MIN_DETECT_RATIO) {
-            return AnalysisResult(status = "retry_needed", retryReason = "아이 얼굴이 충분히 보이지 않았습니다")
+            val start = RetryReason.longestMissingStart(frames.map { it.t }, frames.map { it.detected })
+            val reason = RetryReason.sentence("아이 얼굴이", "잘 보이지 않았어요", start, "아이 얼굴이 화면에 충분히 보이지 않았어요")
+            return AnalysisResult(status = "retry_needed", retryReason = reason)
         }
 
         val t0BaseSec = stimulusTimestampMs / 1000.0
